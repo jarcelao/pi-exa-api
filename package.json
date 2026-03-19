@@ -1,0 +1,37 @@
+{
+  "name": "pi-exa-search",
+  "version": "1.0.0",
+  "description": "Exa search extension for pi - web search and content fetching via Exa API",
+  "keywords": [
+    "pi-package"
+  ],
+  "main": "./extensions/exa-search.ts",
+  "scripts": {
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "exa-js": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "@mariozechner/pi-tui": "*",
+    "@sinclair/typebox": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions"
+    ]
+  }
+}
