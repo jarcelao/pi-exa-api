@@ -1,19 +1,14 @@
-# pi-exa-search
+# pi-exa-api
 
-Exa search extension for [pi](https://github.com/mariozechner/pi) - web search and content fetching via the [Exa API](https://exa.ai/).
+Web search and content fetching for [pi](https://pi.dev) via the [Exa API](https://exa.ai/).
 
-## Features
-
-- **exa_search** - Natural language web search with configurable result types (text, highlights, summary, or metadata only)
-- **exa_fetch** - Fetch and extract content from specific URLs
-- **Cost tracking** - API costs are displayed in tool results
 
 ## Installation
 
 Install as a pi package:
 
 ```bash
-pi install https://github.com/jarcelao/pi-exa-search@v1.0.0
+pi install npm:@jarcelao/pi-exa-api@0.1.0
 ```
 
 ## Configuration
