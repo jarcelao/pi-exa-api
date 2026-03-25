@@ -42,6 +42,7 @@ interface SearchDetails {
 interface FetchDetails {
   url: string;
   title?: string;
+  cost?: { total: number };
 }
 
 // Content Type Mapping
@@ -182,7 +183,14 @@ function createMissingApiKeyError(): Error {
 
 // Exports
 
-export { getApiKey, mapSearchContentType, mapFetchContentType, formatSearchResults, formatFetchResult, createMissingApiKeyError };
+export {
+  getApiKey,
+  mapSearchContentType,
+  mapFetchContentType,
+  formatSearchResults,
+  formatFetchResult,
+  createMissingApiKeyError,
+};
 
 export default function exaSearchExtension(pi: ExtensionAPI): void {
   pi.on("session_start", async (_event: unknown, ctx: ExtensionContext) => {
@@ -198,9 +206,7 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
     query: Type.String({
       description: "Natural language search query",
     }),
-    contentType: Type.Optional(
-      StringEnum(["text", "highlights", "summary", "none"] as const),
-    ),
+    contentType: Type.Optional(StringEnum(["text", "highlights", "summary", "none"] as const)),
     numResults: Type.Optional(
       Type.Number({
         description: "Number of results (1-100)",
@@ -306,9 +312,7 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
     url: Type.String({
       description: "URL to fetch content from",
     }),
-    contentType: Type.Optional(
-      StringEnum(["text", "highlights", "summary"] as const),
-    ),
+    contentType: Type.Optional(StringEnum(["text", "highlights", "summary"] as const)),
     maxCharacters: Type.Optional(
       Type.Number({
         description: "Maximum characters to return",
@@ -363,7 +367,7 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
       if (!response.results || response.results.length === 0) {
         return {
           content: [{ type: "text", text: "No content found at this URL." }],
-          details: { url: params.url } as FetchDetails,
+          details: { url: params.url, cost: response.costDollars } as FetchDetails,
         };
       }
 
@@ -389,6 +393,7 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
         details: {
           url: params.url,
           title: result.title,
+          cost: response.costDollars,
         } as FetchDetails,
       };
     },
@@ -411,11 +416,13 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
         return new Text(text?.type === "text" ? text.text.slice(0, 60) : "", 0, 0);
       }
 
+      const cost = details.cost ? ` • $${details.cost.total.toFixed(6)}` : "";
+
       if (details.title) {
-        return new Text(theme.fg("success", "✓ ") + theme.fg("accent", details.title), 0, 0);
+        return new Text(theme.fg("success", `✓ ${details.title}${cost}`), 0, 0);
       }
 
-      return new Text(theme.fg("muted", "Done"), 0, 0);
+      return new Text(theme.fg("success", `✓ Fetched${cost}`), 0, 0);
     },
   });
 

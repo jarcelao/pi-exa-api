@@ -284,6 +284,16 @@ describe("Fetch Result Formatting", () => {
     expect(formatted).toContain("Full page content here");
   });
 
+  it("should include cost in fetch details", () => {
+    const details = {
+      url: "https://example.com",
+      title: "Test Page",
+      cost: { total: 0.000123 },
+    };
+    expect(details.cost).toBeDefined();
+    expect(details.cost?.total).toBe(0.000123);
+  });
+
   it("should format highlights", () => {
     const result = {
       url: "https://example.com",
@@ -414,6 +424,71 @@ describe("Extension Registration", () => {
       (t: unknown) => (t as { name: string }).name === "exa_fetch",
     ) as { execute: unknown };
     expect(typeof exaFetchTool?.execute).toBe("function");
+  });
+
+  it("should display cost in exa_fetch renderResult", () => {
+    const api = createMockExtensionAPI();
+    exaSearchExtension(api as unknown as import("@mariozechner/pi-coding-agent").ExtensionAPI);
+
+    const tools = api.getTools();
+    const exaFetchTool = tools.find(
+      (t: unknown) => (t as { name: string }).name === "exa_fetch",
+    ) as { renderResult: Function };
+
+    const mockTheme = {
+      fg: (name: string, text: string) => text,
+    };
+
+    const mockResult = {
+      content: [{ type: "text", text: "test" }],
+      details: {
+        url: "https://example.com",
+        title: "Test Page",
+        cost: { total: 0.000123 },
+      },
+    };
+
+    const rendered = exaFetchTool.renderResult(
+      mockResult,
+      { expanded: false, isPartial: false },
+      mockTheme,
+      {},
+    );
+
+    expect(rendered.text).toContain("Test Page");
+    expect(rendered.text).toContain("$0.000123");
+  });
+
+  it("should display cost without title in exa_fetch renderResult", () => {
+    const api = createMockExtensionAPI();
+    exaSearchExtension(api as unknown as import("@mariozechner/pi-coding-agent").ExtensionAPI);
+
+    const tools = api.getTools();
+    const exaFetchTool = tools.find(
+      (t: unknown) => (t as { name: string }).name === "exa_fetch",
+    ) as { renderResult: Function };
+
+    const mockTheme = {
+      fg: (name: string, text: string) => text,
+    };
+
+    const mockResult = {
+      content: [{ type: "text", text: "test" }],
+      details: {
+        url: "https://example.com",
+        cost: { total: 0.000456 },
+      },
+    };
+
+    const rendered = exaFetchTool.renderResult(
+      mockResult,
+      { expanded: false, isPartial: false },
+      mockTheme,
+      {},
+    );
+
+    expect(rendered.text).toContain("Fetched");
+    expect(rendered.text).toContain("$0.000456");
   });
 });
 
