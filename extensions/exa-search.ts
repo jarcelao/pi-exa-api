@@ -1,9 +1,10 @@
 /**
  * exa-search Extension
  *
- * Registers two tools for web search and content fetching using the Exa API:
+ * Registers three tools for web search, content fetching, and code context using the Exa API:
  * - exa_search: Natural language web search
  * - exa_fetch: Fetch and extract content from URLs
+ * - exa_code_context: Search for code snippets and examples from open source repos
  *
  * Also registers the /exa-status command to check API key configuration.
  */
@@ -43,6 +44,23 @@ interface FetchDetails {
   url: string;
   title?: string;
   cost?: { total: number };
+}
+
+interface CodeContextDetails {
+  query: string;
+  resultsCount: number;
+  outputTokens: number;
+  cost?: { total: number };
+}
+
+interface CodeContextResponse {
+  requestId: string;
+  query: string;
+  response: string;
+  resultsCount: number;
+  costDollars: { total: number };
+  searchTime: number;
+  outputTokens: number;
 }
 
 // Content Type Mapping
@@ -173,6 +191,22 @@ function formatFetchResult(result: ExaSearchResult, contentType: FetchContentTyp
   return lines.join("\n");
 }
 
+function formatCodeContextResult(response: CodeContextResponse): string {
+  const lines: string[] = [];
+
+  lines.push(`Query: ${response.query}`);
+  lines.push(`Results: ${response.resultsCount} sources`);
+  lines.push(`Output tokens: ${response.outputTokens}`);
+  lines.push("");
+  lines.push("--- Code Context ---");
+  lines.push("");
+  lines.push(response.response);
+  lines.push("");
+  lines.push(`Cost: $${response.costDollars.total.toFixed(6)}`);
+
+  return lines.join("\n");
+}
+
 // Error Creation
 
 function createMissingApiKeyError(): Error {
@@ -189,6 +223,7 @@ export {
   mapFetchContentType,
   formatSearchResults,
   formatFetchResult,
+  formatCodeContextResult,
   createMissingApiKeyError,
 };
 
@@ -423,6 +458,124 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
       }
 
       return new Text(theme.fg("success", `✓ Fetched${cost}`), 0, 0);
+    },
+  });
+
+  // Register exa_code_context tool
+
+  const ExaCodeContextParams = Type.Object({
+    query: Type.String({
+      description: "Search query to find relevant code snippets and examples",
+    }),
+    tokensNum: Type.Optional(
+      Type.Union([
+        Type.String({
+          description: 'Token limit: "dynamic" for automatic sizing',
+        }),
+        Type.Number({
+          description: "Token limit: 50-100000 (5000 is a good default)",
+        }),
+      ]),
+    ),
+  });
+
+  pi.registerTool({
+    name: "exa_code_context",
+    label: "Exa Code Context",
+    description:
+      "Search for code snippets and examples from open source libraries and repositories. Use this to find working code examples that help understand how libraries, frameworks, or concepts are implemented.",
+    parameters: ExaCodeContextParams,
+
+    async execute(
+      _toolCallId: string,
+      params: Static<typeof ExaCodeContextParams>,
+      _signal: AbortSignal | undefined,
+      _onUpdate: unknown,
+      _ctx: ExtensionContext,
+    ) {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        throw createMissingApiKeyError();
+      }
+
+      const tokensNum = params.tokensNum ?? "dynamic";
+
+      let response;
+      try {
+        const httpResponse = await fetch("https://api.exa.ai/context", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            query: params.query,
+            tokensNum,
+          }),
+        });
+
+        if (!httpResponse.ok) {
+          const errorText = await httpResponse.text();
+          throw new Error(`HTTP ${httpResponse.status}: ${errorText}`);
+        }
+
+        response = (await httpResponse.json()) as CodeContextResponse;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`Exa Context API error: ${message}`);
+      }
+
+      let output = formatCodeContextResult(response);
+
+      const truncation = truncateHead(output, {
+        maxLines: DEFAULT_MAX_LINES,
+        maxBytes: DEFAULT_MAX_BYTES,
+      });
+
+      let result = truncation.content;
+
+      if (truncation.truncated) {
+        const tempFile = writeTempFile(output);
+        result += `\n\n[Output truncated: ${truncation.outputLines} of ${truncation.totalLines} lines`;
+        result += ` (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}).`;
+        result += ` Full output saved to: ${tempFile}]`;
+      }
+
+      return {
+        content: [{ type: "text", text: result }],
+        details: {
+          query: params.query,
+          resultsCount: response.resultsCount,
+          outputTokens: response.outputTokens,
+          cost: response.costDollars,
+        } as CodeContextDetails,
+      };
+    },
+
+    renderCall(args, theme) {
+      const preview = args.query.length > 50 ? args.query.slice(0, 50) + "..." : args.query;
+      const desc = `${args.tokensNum ?? "dynamic"} tokens`;
+      const text =
+        theme.fg("toolTitle", theme.bold("exa_code_context ")) +
+        theme.fg("muted", preview) +
+        theme.fg("dim", ` ${desc}`);
+      return new Text(text, 0, 0);
+    },
+
+    renderResult(result, { expanded: _expanded, isPartial: _isPartial }, theme, _context) {
+      const details = result.details as CodeContextDetails | undefined;
+
+      if (!details) {
+        const text = result.content[0];
+        return new Text(text?.type === "text" ? text.text.slice(0, 60) : "", 0, 0);
+      }
+
+      const cost = details.cost ? ` • $${details.cost.total.toFixed(6)}` : "";
+      return new Text(
+        theme.fg("success", `✓ ${details.resultsCount} sources • ${details.outputTokens} tokens${cost}`),
+        0,
+        0,
+      );
     },
   });
 

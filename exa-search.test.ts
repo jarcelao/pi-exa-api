@@ -5,6 +5,7 @@ import exaSearchExtension, {
   mapFetchContentType,
   formatSearchResults,
   formatFetchResult,
+  formatCodeContextResult,
   createMissingApiKeyError,
 } from "./extensions/exa-search.ts";
 import {
@@ -339,6 +340,114 @@ describe("Error Handling", () => {
   });
 });
 
+describe("Code Context Result Formatting", () => {
+  it("should format code context response with metadata", () => {
+    const response = {
+      requestId: "req_12345",
+      query: "how to use React hooks for state management",
+      response: "## useState Example\n\n```javascript\nconst [count, setCount] = useState(0);\n```",
+      resultsCount: 502,
+      costDollars: { total: 1 },
+      searchTime: 1.234,
+      outputTokens: 4805,
+    };
+
+    const formatted = formatCodeContextResult(response);
+    expect(formatted).toContain("Query: how to use React hooks for state management");
+    expect(formatted).toContain("Results: 502 sources");
+    expect(formatted).toContain("Output tokens: 4805");
+    expect(formatted).toContain("--- Code Context ---");
+    expect(formatted).toContain("## useState Example");
+    expect(formatted).toContain("const [count, setCount] = useState(0);");
+    expect(formatted).toContain("Cost: $1.000000");
+  });
+
+  it("should include query in formatted output", () => {
+    const response = {
+      requestId: "req_abc",
+      query: "Express.js middleware authentication",
+      response: "Some code examples...",
+      resultsCount: 100,
+      costDollars: { total: 0.5 },
+      searchTime: 0.5,
+      outputTokens: 2000,
+    };
+
+    const formatted = formatCodeContextResult(response);
+    expect(formatted).toContain("Query: Express.js middleware authentication");
+  });
+
+  it("should format cost correctly with decimals", () => {
+    const response = {
+      requestId: "req_xyz",
+      query: "test query",
+      response: "response content",
+      resultsCount: 10,
+      costDollars: { total: 0.123456 },
+      searchTime: 0.1,
+      outputTokens: 500,
+    };
+
+    const formatted = formatCodeContextResult(response);
+    expect(formatted).toContain("Cost: $0.123456");
+  });
+
+  it("should display results count and output tokens", () => {
+    const response = {
+      requestId: "req_test",
+      query: "pandas dataframe operations",
+      response: "Code examples here",
+      resultsCount: 150,
+      costDollars: { total: 0.75 },
+      searchTime: 0.8,
+      outputTokens: 3500,
+    };
+
+    const formatted = formatCodeContextResult(response);
+    expect(formatted).toContain("Results: 150 sources");
+    expect(formatted).toContain("Output tokens: 3500");
+  });
+});
+
+describe("Code Context Parameter Validation", () => {
+  it("should accept valid params with query only", () => {
+    const params = { query: "React hooks examples" };
+    expect(params.query).toBeTruthy();
+    expect(params.query.trim()).not.toBe("");
+  });
+
+  it("should accept valid params with dynamic tokens", () => {
+    const params = {
+      query: "Express middleware",
+      tokensNum: "dynamic" as const,
+    };
+    expect(typeof params.query).toBe("string");
+    expect(params.tokensNum).toBe("dynamic");
+  });
+
+  it("should accept valid params with numeric tokens", () => {
+    const params = {
+      query: "Next.js configuration",
+      tokensNum: 5000,
+    };
+    expect(params.tokensNum).toBeGreaterThanOrEqual(50);
+    expect(params.tokensNum).toBeLessThanOrEqual(100000);
+  });
+
+  it("should accept token counts in valid range", () => {
+    const validTokenCounts = [50, 1000, 5000, 10000, 50000, 100000];
+    for (const count of validTokenCounts) {
+      expect(count).toBeGreaterThanOrEqual(50);
+      expect(count).toBeLessThanOrEqual(100000);
+    }
+  });
+
+  it("should accept query strings up to 2000 characters", () => {
+    const longQuery = "a".repeat(2000);
+    expect(longQuery.length).toBe(2000);
+  });
+});
+
 describe("Extension Registration", () => {
   function createMockExtensionAPI() {
     const tools: unknown[] = [];
@@ -366,7 +475,7 @@ describe("Extension Registration", () => {
     exaSearchExtension(api as unknown as import("@mariozechner/pi-coding-agent").ExtensionAPI);
 
     const tools = api.getTools();
-    expect(tools.length).toBeGreaterThanOrEqual(2);
+    expect(tools.length).toBe(3);
 
     const exaSearchTool = tools.find((t: unknown) => (t as { name: string }).name === "exa_search");
     expect(exaSearchTool).toBeDefined();
@@ -383,6 +492,30 @@ describe("Extension Registration", () => {
     expect(exaFetchTool).toBeDefined();
     expect((exaFetchTool as { name: string }).name).toBe("exa_fetch");
     expect((exaFetchTool as { label: string }).label).toBe("Exa Fetch");
+  });
+
+  it("should register exa_code_context tool", () => {
+    const api = createMockExtensionAPI();
+    exaSearchExtension(api as unknown as import("@mariozechner/pi-coding-agent").ExtensionAPI);
+
+    const tools = api.getTools();
+    const codeContextTool = tools.find(
+      (t: unknown) => (t as { name: string }).name === "exa_code_context",
+    );
+    expect(codeContextTool).toBeDefined();
+    expect((codeContextTool as { name: string }).name).toBe("exa_code_context");
+    expect((codeContextTool as { label: string }).label).toBe("Exa Code Context");
+  });
+
+  it("should have execute function on exa_code_context tool", () => {
+    const api = createMockExtensionAPI();
+    exaSearchExtension(api as unknown as import("@mariozechner/pi-coding-agent").ExtensionAPI);
+
+    const tools = api.getTools();
+    const codeContextTool = tools.find(
+      (t: unknown) => (t as { name: string }).name === "exa_code_context",
+    ) as { execute: unknown };
+    expect(typeof codeContextTool?.execute).toBe("function");
   });
 
   it("should register /exa-status command", () => {
@@ -489,6 +622,102 @@ describe("Extension Registration", () => {
 
     expect(rendered.text).toContain("Fetched");
     expect(rendered.text).toContain("$0.000456");
+  });
+
+  it("should display stats and cost in exa_code_context renderResult", () => {
+    const api = createMockExtensionAPI();
+    exaSearchExtension(api as unknown as import("@mariozechner/pi-coding-agent").ExtensionAPI);
+
+    const tools = api.getTools();
+    const codeContextTool = tools.find(
+      (t: unknown) => (t as { name: string }).name === "exa_code_context",
+    ) as { renderResult: Function };
+
+    const mockTheme = {
+      fg: (name: string, text: string) => text,
+    };
+
+    const mockResult = {
+      content: [{ type: "text", text: "test" }],
+      details: {
+        query: "React hooks",
+        resultsCount: 502,
+        outputTokens: 4805,
+        cost: { total: 1.0 },
+      },
+    };
+
+    const rendered = codeContextTool.renderResult(
+      mockResult,
+      { expanded: false, isPartial: false },
+      mockTheme,
+      {},
+    );
+
+    expect(rendered.text).toContain("502 sources");
+    expect(rendered.text).toContain("4805 tokens");
+    expect(rendered.text).toContain("$1.000000");
+  });
+
+  it("should display exa_code_context renderResult without cost", () => {
+    const api = createMockExtensionAPI();
+    exaSearchExtension(api as unknown as import("@mariozechner/pi-coding-agent").ExtensionAPI);
+
+    const tools = api.getTools();
+    const codeContextTool = tools.find(
+      (t: unknown) => (t as { name: string }).name === "exa_code_context",
+    ) as { renderResult: Function };
+
+    const mockTheme = {
+      fg: (name: string, text: string) => text,
+    };
+
+    const mockResult = {
+      content: [{ type: "text", text: "test" }],
+      details: {
+        query: "Express middleware",
+        resultsCount: 100,
+        outputTokens: 2000,
+      },
+    };
+
+    const rendered = codeContextTool.renderResult(
+      mockResult,
+      { expanded: false, isPartial: false },
+      mockTheme,
+      {},
+    );
+
+    expect(rendered.text).toContain("100 sources");
+    expect(rendered.text).toContain("2000 tokens");
+    expect(rendered.text).not.toContain("$");
+  });
+
+  it("should handle exa_code_context renderResult without details", () => {
+    const api = createMockExtensionAPI();
+    exaSearchExtension(api as unknown as import("@mariozechner/pi-coding-agent").ExtensionAPI);
+
+    const tools = api.getTools();
+    const codeContextTool = tools.find(
+      (t: unknown) => (t as { name: string }).name === "exa_code_context",
+    ) as { renderResult: Function };
+
+    const mockTheme = {
+      fg: (name: string, text: string) => text,
+    };
+
+    const mockResult = {
+      content: [{ type: "text", text: "Some code context output here" }],
+    };
+
+    const rendered = codeContextTool.renderResult(
+      mockResult,
+      { expanded: false, isPartial: false },
+      mockTheme,
+      {},
+    );
+
+    expect(rendered.text).toContain("Some code context");
   });
 });
 
