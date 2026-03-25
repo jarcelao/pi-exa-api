@@ -2,7 +2,6 @@
 
 Web search and content fetching for [pi](https://pi.dev) via the [Exa API](https://exa.ai/).
 
-
 ## Installation
 
 Install as a pi package:
