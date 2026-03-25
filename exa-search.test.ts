@@ -6,6 +6,7 @@ import exaSearchExtension, {
   formatSearchResults,
   formatFetchResult,
   formatCodeContextResult,
+  parseCostDollars,
   createMissingApiKeyError,
 } from "./extensions/exa-search.ts";
 import {
@@ -340,14 +341,35 @@ describe("Error Handling", () => {
   });
 });
 
+describe("parseCostDollars", () => {
+  it("should parse JSON string costDollars", () => {
+    const costString = '{"total":0.007,"search":{"neural":0.007}}';
+    const parsed = parseCostDollars(costString);
+    expect(parsed).toEqual({ total: 0.007, search: { neural: 0.007 } });
+    expect(parsed.total).toBe(0.007);
+  });
+
+  it("should pass through object costDollars unchanged", () => {
+    const costObject = { total: 1.5 };
+    const parsed = parseCostDollars(costObject);
+    expect(parsed).toEqual({ total: 1.5 });
+  });
+
+  it("should handle various cost string formats", () => {
+    expect(parseCostDollars('{"total":0}').total).toBe(0);
+    expect(parseCostDollars('{"total":123.456}').total).toBe(123.456);
+    expect(parseCostDollars({ total: 99.9 }).total).toBe(99.9);
+  });
+});
+
 describe("Code Context Result Formatting", () => {
-  it("should format code context response with metadata", () => {
+  it("should format code context response with string costDollars", () => {
     const response = {
       requestId: "req_12345",
       query: "how to use React hooks for state management",
       response: "## useState Example\n\n```javascript\nconst [count, setCount] = useState(0);\n```",
       resultsCount: 502,
-      costDollars: { total: 1 },
+      costDollars: '{"total":0.007,"search":{"neural":0.007}}',
       searchTime: 1.234,
       outputTokens: 4805,
     };
@@ -359,7 +381,22 @@ describe("Code Context Result Formatting", () => {
     expect(formatted).toContain("--- Code Context ---");
     expect(formatted).toContain("## useState Example");
     expect(formatted).toContain("const [count, setCount] = useState(0);");
-    expect(formatted).toContain("Cost: $1.000000");
+    expect(formatted).toContain("Cost: $0.007000");
+  });
+
+  it("should format code context response with object costDollars", () => {
+    const response = {
+      requestId: "req_67890",
+      query: "test query",
+      response: "Some code examples...",
+      resultsCount: 10,
+      costDollars: { total: 1.5 },
+      searchTime: 0.5,
+      outputTokens: 1000,
+    };
+
+    const formatted = formatCodeContextResult(response);
+    expect(formatted).toContain("Cost: $1.500000");
   });
 
   it("should include query in formatted output", () => {
@@ -368,7 +405,7 @@ describe("Code Context Result Formatting", () => {
       query: "Express.js middleware authentication",
       response: "Some code examples...",
       resultsCount: 100,
-      costDollars: { total: 0.5 },
+      costDollars: '{"total":0.5}',
       searchTime: 0.5,
       outputTokens: 2000,
     };
@@ -383,7 +420,7 @@ describe("Code Context Result Formatting", () => {
       query: "test query",
       response: "response content",
       resultsCount: 10,
-      costDollars: { total: 0.123456 },
+      costDollars: '{"total":0.123456}',
       searchTime: 0.1,
       outputTokens: 500,
     };
@@ -398,7 +435,7 @@ describe("Code Context Result Formatting", () => {
       query: "pandas dataframe operations",
       response: "Code examples here",
       resultsCount: 150,
-      costDollars: { total: 0.75 },
+      costDollars: '{"total":0.75}',
       searchTime: 0.8,
       outputTokens: 3500,
     };

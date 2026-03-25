@@ -58,7 +58,7 @@ interface CodeContextResponse {
   query: string;
   response: string;
   resultsCount: number;
-  costDollars: { total: number };
+  costDollars: string | { total: number };
   searchTime: number;
   outputTokens: number;
 }
@@ -191,6 +191,13 @@ function formatFetchResult(result: ExaSearchResult, contentType: FetchContentTyp
   return lines.join("\n");
 }
 
+function parseCostDollars(costDollars: string | { total: number }): { total: number } {
+  if (typeof costDollars === "string") {
+    return JSON.parse(costDollars);
+  }
+  return costDollars;
+}
+
 function formatCodeContextResult(response: CodeContextResponse): string {
   const lines: string[] = [];
 
@@ -202,7 +209,9 @@ function formatCodeContextResult(response: CodeContextResponse): string {
   lines.push("");
   lines.push(response.response);
   lines.push("");
-  lines.push(`Cost: $${response.costDollars.total.toFixed(6)}`);
+
+  const cost = parseCostDollars(response.costDollars);
+  lines.push(`Cost: $${cost.total.toFixed(6)}`);
 
   return lines.join("\n");
 }
@@ -224,6 +233,7 @@ export {
   formatSearchResults,
   formatFetchResult,
   formatCodeContextResult,
+  parseCostDollars,
   createMissingApiKeyError,
 };
 
@@ -541,13 +551,15 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
         result += ` Full output saved to: ${tempFile}]`;
       }
 
+      const cost = parseCostDollars(response.costDollars);
+
       return {
         content: [{ type: "text", text: result }],
         details: {
           query: params.query,
           resultsCount: response.resultsCount,
           outputTokens: response.outputTokens,
-          cost: response.costDollars,
+          cost,
         } as CodeContextDetails,
       };
     },
