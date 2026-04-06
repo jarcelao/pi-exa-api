@@ -298,6 +298,7 @@ describe("Fetch Result Formatting", () => {
 
   it("should format highlights", () => {
     const result = {
+      title: "Test Page",
       url: "https://example.com",
       highlights: ["Key point 1", "Key point 2"],
     };
@@ -311,6 +312,7 @@ describe("Fetch Result Formatting", () => {
 
   it("should format summary", () => {
     const result = {
+      title: "Test Page",
       url: "https://example.com",
       summary: "This page is about...",
     };
@@ -324,9 +326,9 @@ describe("Fetch Result Formatting", () => {
     const result = {
       url: "https://example.com",
       text: "Content only",
-    };
+    } as { title?: string; url: string; text: string };
 
-    const formatted = formatFetchResult(result, "text");
+    const formatted = formatFetchResult(result as Parameters<typeof formatFetchResult>[0], "text");
     expect(formatted).toContain("https://example.com");
     expect(formatted).not.toContain("Title:");
   });
@@ -622,7 +624,6 @@ describe("Extension Registration", () => {
       mockResult,
       { expanded: false, isPartial: false },
       mockTheme,
-      {},
     );
 
     expect(rendered.text).toContain("Test Page");
@@ -654,7 +655,6 @@ describe("Extension Registration", () => {
       mockResult,
       { expanded: false, isPartial: false },
       mockTheme,
-      {},
     );
 
     expect(rendered.text).toContain("Fetched");
@@ -688,7 +688,6 @@ describe("Extension Registration", () => {
       mockResult,
       { expanded: false, isPartial: false },
       mockTheme,
-      {},
     );
 
     expect(rendered.text).toContain("502 sources");
@@ -722,7 +721,6 @@ describe("Extension Registration", () => {
       mockResult,
       { expanded: false, isPartial: false },
       mockTheme,
-      {},
     );
 
     expect(rendered.text).toContain("100 sources");
@@ -751,7 +749,6 @@ describe("Extension Registration", () => {
       mockResult,
       { expanded: false, isPartial: false },
       mockTheme,
-      {},
     );
 
     expect(rendered.text).toContain("Some code context");

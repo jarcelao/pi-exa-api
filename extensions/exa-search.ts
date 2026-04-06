@@ -9,17 +9,18 @@
  * Also registers the /exa-status command to check API key configuration.
  */
 
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { Text } from "@mariozechner/pi-tui";
-import { Type, type Static } from "@sinclair/typebox";
-import { StringEnum } from "@mariozechner/pi-ai";
 import {
-  truncateHead,
   DEFAULT_MAX_BYTES,
   DEFAULT_MAX_LINES,
   formatSize,
-  writeTempFile,
+  truncateHead,
 } from "@mariozechner/pi-coding-agent";
+import { Text } from "@mariozechner/pi-tui";
+import { Type, type Static } from "@mariozechner/pi-ai";
 import Exa from "exa-js";
 
 // API Key Management
@@ -27,6 +28,15 @@ import Exa from "exa-js";
 function getApiKey(): string | undefined {
   const key = process.env.EXA_API_KEY;
   return key && key.length > 0 ? key : undefined;
+}
+
+// Temp File Helper
+
+async function writeTempFile(content: string): Promise<string> {
+  const tempDir = await mkdtemp(join(tmpdir(), "pi-exa-"));
+  const tempFile = join(tempDir, "output.txt");
+  await writeFile(tempFile, content, "utf8");
+  return tempFile;
 }
 
 // Type Definitions
@@ -251,7 +261,14 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
     query: Type.String({
       description: "Natural language search query",
     }),
-    contentType: Type.Optional(StringEnum(["text", "highlights", "summary", "none"] as const)),
+    contentType: Type.Optional(
+      Type.Union([
+        Type.Literal("text"),
+        Type.Literal("highlights"),
+        Type.Literal("summary"),
+        Type.Literal("none"),
+      ]),
+    ),
     numResults: Type.Optional(
       Type.Number({
         description: "Number of results (1-100)",
@@ -312,7 +329,7 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
       let result = truncation.content;
 
       if (truncation.truncated) {
-        const tempFile = writeTempFile(output);
+        const tempFile = await writeTempFile(output);
         result += `\n\n[Output truncated: ${truncation.outputLines} of ${truncation.totalLines} lines`;
         result += ` (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}).`;
         result += ` Full output saved to: ${tempFile}]`;
@@ -338,7 +355,7 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
       return new Text(text, 0, 0);
     },
 
-    renderResult(result, { expanded: _expanded, isPartial: _isPartial }, theme, _context) {
+    renderResult(result, _options, theme) {
       const details = result.details as SearchDetails | undefined;
 
       if (!details) {
@@ -357,7 +374,9 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
     url: Type.String({
       description: "URL to fetch content from",
     }),
-    contentType: Type.Optional(StringEnum(["text", "highlights", "summary"] as const)),
+    contentType: Type.Optional(
+      Type.Union([Type.Literal("text"), Type.Literal("highlights"), Type.Literal("summary")]),
+    ),
     maxCharacters: Type.Optional(
       Type.Number({
         description: "Maximum characters to return",
@@ -427,7 +446,7 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
       let content = truncation.content;
 
       if (truncation.truncated) {
-        const tempFile = writeTempFile(output);
+        const tempFile = await writeTempFile(output);
         content += `\n\n[Output truncated: ${truncation.outputLines} of ${truncation.totalLines} lines`;
         content += ` (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}).`;
         content += ` Full output saved to: ${tempFile}]`;
@@ -453,7 +472,7 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
       return new Text(text, 0, 0);
     },
 
-    renderResult(result, { expanded: _expanded, isPartial: _isPartial }, theme, _context) {
+    renderResult(result, _options, theme) {
       const details = result.details as FetchDetails | undefined;
 
       if (!details) {
@@ -545,7 +564,7 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
       let result = truncation.content;
 
       if (truncation.truncated) {
-        const tempFile = writeTempFile(output);
+        const tempFile = await writeTempFile(output);
         result += `\n\n[Output truncated: ${truncation.outputLines} of ${truncation.totalLines} lines`;
         result += ` (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}).`;
         result += ` Full output saved to: ${tempFile}]`;
@@ -574,7 +593,7 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
       return new Text(text, 0, 0);
     },
 
-    renderResult(result, { expanded: _expanded, isPartial: _isPartial }, theme, _context) {
+    renderResult(result, _options, theme) {
       const details = result.details as CodeContextDetails | undefined;
 
       if (!details) {
@@ -584,7 +603,10 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
 
       const cost = details.cost ? ` • $${details.cost.total.toFixed(6)}` : "";
       return new Text(
-        theme.fg("success", `✓ ${details.resultsCount} sources • ${details.outputTokens} tokens${cost}`),
+        theme.fg(
+          "success",
+          `✓ ${details.resultsCount} sources • ${details.outputTokens} tokens${cost}`,
+        ),
         0,
         0,
       );
