@@ -527,7 +527,14 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
         throw createMissingApiKeyError();
       }
 
-      const tokensNum = params.tokensNum ?? "dynamic";
+      // Ensure tokensNum is the correct type: number or "dynamic"
+      // The schema accepts both string and number, but the Exa API requires:
+      // - A number (e.g., 5000)
+      // - The literal string "dynamic"
+      let tokensNum: string | number = params.tokensNum ?? "dynamic";
+      if (typeof tokensNum === "string" && tokensNum !== "dynamic") {
+        tokensNum = Number(tokensNum);
+      }
 
       let response;
       try {

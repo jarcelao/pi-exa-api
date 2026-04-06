@@ -487,6 +487,60 @@ describe("Code Context Parameter Validation", () => {
   });
 });
 
+describe("tokensNum Type Coercion", () => {
+  // Helper function that mirrors the type coercion logic in exa_code_context execute
+  function coerceTokensNum(tokensNum: string | number | undefined): string | number {
+    const value = tokensNum ?? "dynamic";
+    if (typeof value === "string" && value !== "dynamic") {
+      return Number(value);
+    }
+    return value;
+  }
+
+  it("should return 'dynamic' when tokensNum is undefined", () => {
+    const result = coerceTokensNum(undefined);
+    expect(result).toBe("dynamic");
+    expect(typeof result).toBe("string");
+  });
+
+  it("should preserve 'dynamic' string", () => {
+    const result = coerceTokensNum("dynamic");
+    expect(result).toBe("dynamic");
+    expect(typeof result).toBe("string");
+  });
+
+  it("should preserve numeric tokens", () => {
+    const result = coerceTokensNum(5000);
+    expect(result).toBe(5000);
+    expect(typeof result).toBe("number");
+  });
+
+  it("should coerce numeric string to number", () => {
+    const result = coerceTokensNum("5000");
+    expect(result).toBe(5000);
+    expect(typeof result).toBe("number");
+  });
+
+  it("should coerce various numeric strings", () => {
+    expect(coerceTokensNum("1000")).toBe(1000);
+    expect(coerceTokensNum("10000")).toBe(10000);
+    expect(coerceTokensNum("3000")).toBe(3000);
+    expect(typeof coerceTokensNum("5000")).toBe("number");
+  });
+
+  it("should handle boundary token values", () => {
+    expect(coerceTokensNum(50)).toBe(50);
+    expect(coerceTokensNum(100000)).toBe(100000);
+  });
+
+  it("should not modify actual numbers", () => {
+    const originalNumber = 7500;
+    const result = coerceTokensNum(originalNumber);
+    expect(result).toBe(originalNumber);
+    expect(result).toBe(7500);
+  });
+});
+
 describe("Extension Registration", () => {
   function createMockExtensionAPI() {
     const tools: unknown[] = [];
