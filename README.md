@@ -10,6 +10,9 @@ Install as a pi package:
 pi install npm:@jarcelao/pi-exa-api
 ```
 
+> [!NOTE]
+> This extension is compatible with `pi-coding-agent` v0.69.0
+
 ## Configuration
 
 Set your Exa API key as an environment variable before starting pi:

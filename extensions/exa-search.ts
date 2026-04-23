@@ -16,11 +16,12 @@ import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-age
 import {
   DEFAULT_MAX_BYTES,
   DEFAULT_MAX_LINES,
+  defineTool,
   formatSize,
   truncateHead,
 } from "@mariozechner/pi-coding-agent";
 import { Text } from "@mariozechner/pi-tui";
-import { Type, type Static } from "@mariozechner/pi-ai";
+import { Type, type Static } from "typebox";
 import Exa from "exa-js";
 
 // API Key Management
@@ -276,9 +277,10 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
     ),
   });
 
-  pi.registerTool({
-    name: "exa_search",
-    label: "Exa Search",
+  pi.registerTool(
+    defineTool({
+      name: "exa_search",
+      label: "Exa Search",
     description:
       "Search the web using Exa's neural search API. Best for factual queries, research, and finding relevant web content. Use highlights mode by default for token efficiency.",
     parameters: ExaSearchParams,
@@ -366,7 +368,9 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
       const cost = details.cost ? ` • $${details.cost.total.toFixed(6)}` : "";
       return new Text(theme.fg("success", `✓ ${details.numResults} results${cost}`), 0, 0);
     },
-  });
+    })
+  );
+
 
   // Register exa_fetch tool
 
@@ -384,9 +388,10 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
     ),
   });
 
-  pi.registerTool({
-    name: "exa_fetch",
-    label: "Exa Fetch",
+  pi.registerTool(
+    defineTool({
+      name: "exa_fetch",
+      label: "Exa Fetch",
     description:
       "Fetch and extract content from a specific URL using Exa. Can return full text, highlights, or AI-generated summary.",
     parameters: ExaFetchParams,
@@ -488,7 +493,8 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
 
       return new Text(theme.fg("success", `✓ Fetched${cost}`), 0, 0);
     },
-  });
+    })
+  );
 
   // Register exa_code_context tool
 
@@ -508,9 +514,10 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
     ),
   });
 
-  pi.registerTool({
-    name: "exa_code_context",
-    label: "Exa Code Context",
+  pi.registerTool(
+    defineTool({
+      name: "exa_code_context",
+      label: "Exa Code Context",
     description:
       "Search for code snippets and examples from open source libraries and repositories. Use this to find working code examples that help understand how libraries, frameworks, or concepts are implemented.",
     parameters: ExaCodeContextParams,
@@ -618,7 +625,9 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
         0,
       );
     },
-  });
+    })
+  );
+
 
   // Register /exa-status command
 
