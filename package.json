@@ -12,7 +12,7 @@
     "type": "git",
     "url": "git+https://github.com/jarcelao/pi-exa-api.git"
   },
-  "main": "./extensions/exa-search.ts",
+  "main": "./extensions/index.ts",
   "scripts": {
     "test": "vitest",
     "test:run": "vitest run",

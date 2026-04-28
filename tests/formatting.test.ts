@@ -4,7 +4,7 @@ import {
   formatFetchResult,
   formatCodeContextResult,
   parseCostDollars,
-} from "../extensions/exa-search.ts";
+} from "../extensions/index.ts";
 
 describe("Search Result Formatting", () => {
   it("should format basic search results", () => {

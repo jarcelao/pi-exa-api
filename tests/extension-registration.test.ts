@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import exaSearchExtension from "../extensions/exa-search.ts";
+import exaSearchExtension from "../extensions/index.ts";
 
 describe("Extension Registration", () => {
   function createMockExtensionAPI() {

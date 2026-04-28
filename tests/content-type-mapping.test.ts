@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mapSearchContentType, mapFetchContentType } from "../extensions/exa-search.ts";
+import { mapSearchContentType, mapFetchContentType } from "../extensions/index.ts";
 
 describe("ContentType Mapping (Search)", () => {
   it('should map "text" to contents.text', () => {
