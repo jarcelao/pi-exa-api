@@ -37,7 +37,11 @@ describe("formatSearchResults", () => {
   it("should format highlights with bullet points", () => {
     const formatted = formatSearchResults({
       results: [
-        { title: "Test", url: "https://example.com", highlights: ["First highlight", "Second highlight"] },
+        {
+          title: "Test",
+          url: "https://example.com",
+          highlights: ["First highlight", "Second highlight"],
+        },
       ],
     });
     expect(formatted).toContain("Highlights:");
@@ -130,7 +134,9 @@ describe("formatFetchResult", () => {
 
   it("should omit title when not provided", () => {
     const formatted = formatFetchResult(
-      { url: "https://example.com", text: "Content only" } as Parameters<typeof formatFetchResult>[0],
+      { url: "https://example.com", text: "Content only" } as Parameters<
+        typeof formatFetchResult
+      >[0],
       "text",
     );
     expect(formatted).toContain("URL: https://example.com");
@@ -147,10 +153,7 @@ describe("formatFetchResult", () => {
   });
 
   it("should handle missing text for text contentType", () => {
-    const formatted = formatFetchResult(
-      { title: "Test", url: "https://example.com" },
-      "text",
-    );
+    const formatted = formatFetchResult({ title: "Test", url: "https://example.com" }, "text");
     expect(formatted).toContain("URL: https://example.com");
     // No text section should appear
     expect(formatted).not.toContain("Text:");
@@ -204,7 +207,10 @@ describe("formatCodeContextResult", () => {
   });
 
   it("should format cost with full decimal precision", () => {
-    const formatted = formatCodeContextResult({ ...baseResponse, costDollars: '{"total":0.123456}' });
+    const formatted = formatCodeContextResult({
+      ...baseResponse,
+      costDollars: '{"total":0.123456}',
+    });
     expect(formatted).toContain("Cost: $0.123456");
   });
 });

@@ -17,8 +17,7 @@ function createMockExtensionAPI() {
     getTools: () => tools,
     getCommand: (name: string) => commands.get(name),
     getEventHandlers: (event: string) => eventHandlers.get(event) || [],
-    findTool: (name: string) =>
-      tools.find((t: unknown) => (t as { name: string }).name === name),
+    findTool: (name: string) => tools.find((t: unknown) => (t as { name: string }).name === name),
   };
 }
 
@@ -70,7 +69,10 @@ describe("exa_fetch renderResult", () => {
     const api = setup();
     const tool = api.findTool("exa_fetch") as { renderResult: Function };
     const rendered = tool.renderResult(
-      { content: [], details: { url: "https://example.com", title: "Test Page", cost: { total: 0.000123 } } },
+      {
+        content: [],
+        details: { url: "https://example.com", title: "Test Page", cost: { total: 0.000123 } },
+      },
       { expanded: false, isPartial: false },
       mockTheme,
     );
@@ -109,7 +111,12 @@ describe("exa_code_context renderResult", () => {
     const rendered = tool.renderResult(
       {
         content: [],
-        details: { query: "React hooks", resultsCount: 502, outputTokens: 4805, cost: { total: 1.0 } },
+        details: {
+          query: "React hooks",
+          resultsCount: 502,
+          outputTokens: 4805,
+          cost: { total: 1.0 },
+        },
       },
       { expanded: false, isPartial: false },
       mockTheme,

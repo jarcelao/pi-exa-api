@@ -125,8 +125,7 @@ export function createExaFetchTool() {
     },
 
     renderCall(args: FetchParams, theme: Theme) {
-      const urlPreview =
-        args.url.length > 40 ? args.url.slice(0, 40) + "..." : args.url;
+      const urlPreview = args.url.length > 40 ? args.url.slice(0, 40) + "..." : args.url;
       const desc = args.contentType ?? "text";
       const text =
         theme.fg("toolTitle", theme.bold("exa_fetch ")) +

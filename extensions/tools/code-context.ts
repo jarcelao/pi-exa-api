@@ -129,8 +129,7 @@ export function createExaCodeContextTool() {
     },
 
     renderCall(args: CodeContextParams, theme: Theme) {
-      const preview =
-        args.query.length > 50 ? args.query.slice(0, 50) + "..." : args.query;
+      const preview = args.query.length > 50 ? args.query.slice(0, 50) + "..." : args.query;
       const desc = `${args.tokensNum ?? "dynamic"} tokens`;
       const text =
         theme.fg("toolTitle", theme.bold("exa_code_context ")) +
@@ -139,9 +138,12 @@ export function createExaCodeContextTool() {
       return new Text(text, 0, 0);
     },
 
-    renderResult(result: { content: Array<{ type: string; text: string }>; details?: CodeContextDetails }, _options: unknown, theme: Theme) {
+    renderResult(
+      result: { content: Array<{ type: string; text: string }>; details?: CodeContextDetails },
+      _options: unknown,
+      theme: Theme,
+    ) {
       const details = result.details as CodeContextDetails | undefined;
-
 
       if (!details) {
         const text = result.content[0];
