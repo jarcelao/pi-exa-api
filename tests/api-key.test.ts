@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { getApiKey, createMissingApiKeyError } from "../extensions/index.ts";
+import { getApiKey } from "../extensions/api-key.ts";
+import { createMissingApiKeyError } from "../extensions/errors.ts";
 
 describe("API Key Management", () => {
   afterEach(() => {

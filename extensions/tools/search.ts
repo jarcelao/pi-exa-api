@@ -2,26 +2,21 @@
  * Exa Search tool definition
  */
 
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import type { ExtensionContext, Theme } from "@mariozechner/pi-coding-agent";
-import {
-  DEFAULT_MAX_BYTES,
-  DEFAULT_MAX_LINES,
-  defineTool,
-  formatSize,
-  truncateHead,
-} from "@mariozechner/pi-coding-agent";
-import { Text } from "@mariozechner/pi-tui";
+import { defineTool } from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "typebox";
 import Exa from "exa-js";
 
-import { getApiKey } from "../api-key.ts";
-import { createMissingApiKeyError } from "../errors.ts";
 import { mapSearchContentType } from "../content-types.ts";
-import { formatSearchResults, formatToolOutputPreview } from "../formatters.ts";
+import { formatSearchResults } from "../formatters.ts";
 import type { SearchContentType, SearchDetails, ExaSearchResult } from "../types.ts";
+import {
+  requireApiKey,
+  truncateAndSave,
+  renderToolCall,
+  renderToolResult,
+  formatCost,
+} from "./shared.ts";
 
 // Tool parameter schema
 export const ExaSearchParams = Type.Object({
@@ -63,11 +58,7 @@ export function createExaSearchTool() {
       _onUpdate: unknown,
       _ctx: ExtensionContext,
     ) {
-      const apiKey = getApiKey();
-      if (!apiKey) {
-        throw createMissingApiKeyError();
-      }
-
+      const apiKey = requireApiKey();
       const numResults = Math.max(1, Math.min(100, params.numResults ?? 10));
       const exa = new Exa(apiKey);
 
@@ -89,26 +80,12 @@ export function createExaSearchTool() {
         throw new Error(`Exa API error: ${message}`);
       }
 
-      let output = formatSearchResults({
+      const output = formatSearchResults({
         results: response.results as ExaSearchResult[],
         costDollars: response.costDollars as { total: number } | undefined,
       });
 
-      const truncation = truncateHead(output, {
-        maxLines: DEFAULT_MAX_LINES,
-        maxBytes: DEFAULT_MAX_BYTES,
-      });
-
-      let result = truncation.content;
-
-      if (truncation.truncated) {
-        const tempDir = await mkdtemp(join(tmpdir(), "pi-exa-"));
-        const tempFile = join(tempDir, "output.txt");
-        await writeFile(tempFile, output, "utf8");
-        result += `\n\n[Output truncated: ${truncation.outputLines} of ${truncation.totalLines} lines`;
-        result += ` (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}).`;
-        result += ` Full output saved to: ${tempFile}]`;
-      }
+      const result = await truncateAndSave(output);
 
       return {
         content: [{ type: "text", text: result }],
@@ -121,28 +98,15 @@ export function createExaSearchTool() {
     },
 
     renderCall(args: SearchParams, theme: Theme) {
-      const preview = args.query.length > 50 ? args.query.slice(0, 50) + "..." : args.query;
       const desc = `${args.numResults ?? 10} results • ${args.contentType ?? "highlights"}`;
-      const text =
-        theme.fg("toolTitle", theme.bold("exa_search ")) +
-        theme.fg("muted", preview) +
-        theme.fg("dim", ` ${desc}`);
-      return new Text(text, 0, 0);
+      return renderToolCall("exa_search", args.query, desc, theme);
     },
 
     renderResult(result, options, theme, context) {
       const details = result.details as SearchDetails | undefined;
-      const text = (context.lastComponent as Text | undefined) ?? new Text("", 0, 0);
-
-      let header = "";
-      if (details) {
-        const cost = details.cost ? ` • $${details.cost.total.toFixed(6)}` : "";
-        header = theme.fg("success", `✓ ${details.numResults} results${cost}`);
-      }
-
-      const preview = formatToolOutputPreview(result, options, theme);
-      text.setText(preview ? `${header}\n${preview}` : header);
-      return text;
+      const cost = details ? formatCost(details.cost) : "";
+      const header = details ? theme.fg("success", `✓ ${details.numResults} results${cost}`) : "";
+      return renderToolResult(header, result, options, theme, context);
     },
   });
 }

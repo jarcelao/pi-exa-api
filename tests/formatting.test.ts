@@ -4,7 +4,7 @@ import {
   formatFetchResult,
   formatCodeContextResult,
   parseCostDollars,
-} from "../extensions/index.ts";
+} from "../extensions/formatters.ts";
 
 describe("formatSearchResults", () => {
   it("should format basic result fields", () => {

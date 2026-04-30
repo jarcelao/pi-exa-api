@@ -2,26 +2,21 @@
  * Exa Fetch tool definition
  */
 
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import type { ExtensionContext, Theme } from "@mariozechner/pi-coding-agent";
-import {
-  DEFAULT_MAX_BYTES,
-  DEFAULT_MAX_LINES,
-  defineTool,
-  formatSize,
-  truncateHead,
-} from "@mariozechner/pi-coding-agent";
-import { Text } from "@mariozechner/pi-tui";
+import { defineTool } from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "typebox";
 import Exa from "exa-js";
 
-import { getApiKey } from "../api-key.ts";
-import { createMissingApiKeyError } from "../errors.ts";
 import { mapFetchContentType } from "../content-types.ts";
-import { formatFetchResult, formatToolOutputPreview } from "../formatters.ts";
+import { formatFetchResult } from "../formatters.ts";
 import type { FetchContentType, FetchDetails, ExaSearchResult } from "../types.ts";
+import {
+  requireApiKey,
+  truncateAndSave,
+  renderToolCall,
+  renderToolResult,
+  formatCost,
+} from "./shared.ts";
 
 // Tool parameter schema
 export const ExaFetchParams = Type.Object({
@@ -58,11 +53,7 @@ export function createExaFetchTool() {
       _onUpdate: unknown,
       _ctx: ExtensionContext,
     ) {
-      const apiKey = getApiKey();
-      if (!apiKey) {
-        throw createMissingApiKeyError();
-      }
-
+      const apiKey = requireApiKey();
       const exa = new Exa(apiKey);
 
       const contentsOptions: {
@@ -96,23 +87,8 @@ export function createExaFetchTool() {
       }
 
       const result = response.results[0] as ExaSearchResult;
-      let output = formatFetchResult(result, (params.contentType ?? "text") as FetchContentType);
-
-      const truncation = truncateHead(output, {
-        maxLines: DEFAULT_MAX_LINES,
-        maxBytes: DEFAULT_MAX_BYTES,
-      });
-
-      let content = truncation.content;
-
-      if (truncation.truncated) {
-        const tempDir = await mkdtemp(join(tmpdir(), "pi-exa-"));
-        const tempFile = join(tempDir, "output.txt");
-        await writeFile(tempFile, output, "utf8");
-        content += `\n\n[Output truncated: ${truncation.outputLines} of ${truncation.totalLines} lines`;
-        content += ` (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}).`;
-        content += ` Full output saved to: ${tempFile}]`;
-      }
+      const output = formatFetchResult(result, (params.contentType ?? "text") as FetchContentType);
+      const content = await truncateAndSave(output);
 
       return {
         content: [{ type: "text", text: content }],
@@ -125,30 +101,19 @@ export function createExaFetchTool() {
     },
 
     renderCall(args: FetchParams, theme: Theme) {
-      const urlPreview = args.url.length > 40 ? args.url.slice(0, 40) + "..." : args.url;
       const desc = args.contentType ?? "text";
-      const text =
-        theme.fg("toolTitle", theme.bold("exa_fetch ")) +
-        theme.fg("muted", urlPreview) +
-        theme.fg("dim", ` ${desc}`);
-      return new Text(text, 0, 0);
+      return renderToolCall("exa_fetch", args.url, desc, theme);
     },
 
     renderResult(result, options, theme, context) {
       const details = result.details as FetchDetails | undefined;
-      const text = (context.lastComponent as Text | undefined) ?? new Text("", 0, 0);
-
-      let header = "";
-      if (details) {
-        const cost = details.cost ? ` • $${details.cost.total.toFixed(6)}` : "";
-        header = details.title
+      const cost = details ? formatCost(details.cost) : "";
+      const header = details
+        ? details.title
           ? theme.fg("success", `✓ ${details.title}${cost}`)
-          : theme.fg("success", `✓ Fetched${cost}`);
-      }
-
-      const preview = formatToolOutputPreview(result, options, theme);
-      text.setText(preview ? `${header}\n${preview}` : header);
-      return text;
+          : theme.fg("success", `✓ Fetched${cost}`)
+        : "";
+      return renderToolResult(header, result, options, theme, context);
     },
   });
 }

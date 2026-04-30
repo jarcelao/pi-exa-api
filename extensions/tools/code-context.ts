@@ -2,28 +2,20 @@
  * Exa Code Context tool definition
  */
 
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import type { Theme } from "@mariozechner/pi-coding-agent";
-import {
-  DEFAULT_MAX_BYTES,
-  DEFAULT_MAX_LINES,
-  defineTool,
-  formatSize,
-  truncateHead,
-} from "@mariozechner/pi-coding-agent";
-import { Text } from "@mariozechner/pi-tui";
+import { defineTool } from "@mariozechner/pi-coding-agent";
 import { Type, type Static } from "typebox";
 
-import { getApiKey } from "../api-key.ts";
-import { createMissingApiKeyError } from "../errors.ts";
-import {
-  formatCodeContextResult,
-  formatToolOutputPreview,
-  parseCostDollars,
-} from "../formatters.ts";
+import { formatCodeContextResult, parseCostDollars } from "../formatters.ts";
 import type { CodeContextDetails, CodeContextResponse } from "../types.ts";
+import {
+  requireApiKey,
+  truncateAndSave,
+  renderToolCall,
+  renderToolResult,
+  formatCost,
+  EXA_CONTEXT_API_URL,
+} from "./shared.ts";
 
 // Tool parameter schema
 export const ExaCodeContextParams = Type.Object({
@@ -62,15 +54,9 @@ export function createExaCodeContextTool() {
       _onUpdate: unknown,
       _ctx: unknown,
     ) {
-      const apiKey = getApiKey();
-      if (!apiKey) {
-        throw createMissingApiKeyError();
-      }
+      const apiKey = requireApiKey();
 
       // Ensure tokensNum is the correct type: number or "dynamic"
-      // The schema accepts both string and number, but the Exa API requires:
-      // - A number (e.g., 5000)
-      // - The literal string "dynamic"
       let tokensNum: string | number = params.tokensNum ?? "dynamic";
       if (typeof tokensNum === "string" && tokensNum !== "dynamic") {
         tokensNum = Number(tokensNum);
@@ -78,7 +64,7 @@ export function createExaCodeContextTool() {
 
       let response: CodeContextResponse;
       try {
-        const httpResponse = await fetch("https://api.exa.ai/context", {
+        const httpResponse = await fetch(EXA_CONTEXT_API_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -101,24 +87,8 @@ export function createExaCodeContextTool() {
         throw new Error(`Exa Context API error: ${message}`);
       }
 
-      let output = formatCodeContextResult(response);
-
-      const truncation = truncateHead(output, {
-        maxLines: DEFAULT_MAX_LINES,
-        maxBytes: DEFAULT_MAX_BYTES,
-      });
-
-      let result = truncation.content;
-
-      if (truncation.truncated) {
-        const tempDir = await mkdtemp(join(tmpdir(), "pi-exa-"));
-        const tempFile = join(tempDir, "output.txt");
-        await writeFile(tempFile, output, "utf8");
-        result += `\n\n[Output truncated: ${truncation.outputLines} of ${truncation.totalLines} lines`;
-        result += ` (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}).`;
-        result += ` Full output saved to: ${tempFile}]`;
-      }
-
+      const output = formatCodeContextResult(response);
+      const result = await truncateAndSave(output);
       const cost = parseCostDollars(response.costDollars);
 
       return {
@@ -133,31 +103,20 @@ export function createExaCodeContextTool() {
     },
 
     renderCall(args: CodeContextParams, theme: Theme) {
-      const preview = args.query.length > 50 ? args.query.slice(0, 50) + "..." : args.query;
       const desc = `${args.tokensNum ?? "dynamic"} tokens`;
-      const text =
-        theme.fg("toolTitle", theme.bold("exa_code_context ")) +
-        theme.fg("muted", preview) +
-        theme.fg("dim", ` ${desc}`);
-      return new Text(text, 0, 0);
+      return renderToolCall("exa_code_context", args.query, desc, theme);
     },
 
     renderResult(result, options, theme, context) {
       const details = result.details as CodeContextDetails | undefined;
-      const text = (context.lastComponent as Text | undefined) ?? new Text("", 0, 0);
-
-      let header = "";
-      if (details) {
-        const cost = details.cost ? ` • $${details.cost.total.toFixed(6)}` : "";
-        header = theme.fg(
-          "success",
-          `✓ ${details.resultsCount} sources • ${details.outputTokens} tokens${cost}`,
-        );
-      }
-
-      const preview = formatToolOutputPreview(result, options, theme);
-      text.setText(preview ? `${header}\n${preview}` : header);
-      return text;
+      const cost = details ? formatCost(details.cost) : "";
+      const header = details
+        ? theme.fg(
+            "success",
+            `✓ ${details.resultsCount} sources • ${details.outputTokens} tokens${cost}`,
+          )
+        : "";
+      return renderToolResult(header, result, options, theme, context);
     },
   });
 }

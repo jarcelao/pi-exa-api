@@ -12,30 +12,10 @@
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 
 import { getApiKey } from "./api-key.ts";
-import { createMissingApiKeyError } from "./errors.ts";
-import { mapSearchContentType, mapFetchContentType } from "./content-types.ts";
-import {
-  formatSearchResults,
-  formatFetchResult,
-  formatCodeContextResult,
-  parseCostDollars,
-} from "./formatters.ts";
 
 import { createExaSearchTool } from "./tools/search.ts";
 import { createExaFetchTool } from "./tools/fetch.ts";
 import { createExaCodeContextTool } from "./tools/code-context.ts";
-
-// Re-export all utilities for testing
-export {
-  getApiKey,
-  createMissingApiKeyError,
-  mapSearchContentType,
-  mapFetchContentType,
-  formatSearchResults,
-  formatFetchResult,
-  formatCodeContextResult,
-  parseCostDollars,
-};
 
 export default function exaSearchExtension(pi: ExtensionAPI): void {
   pi.on("session_start", async (_event: unknown, ctx: ExtensionContext) => {
