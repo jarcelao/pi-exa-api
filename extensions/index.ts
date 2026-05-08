@@ -9,7 +9,7 @@
  * Also registers the /exa-status command to check API key configuration.
  */
 
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 import { getApiKey } from "./api-key.ts";
 

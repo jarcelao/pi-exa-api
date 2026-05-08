@@ -2,8 +2,8 @@
  * Result formatting utilities
  */
 
-import { keyHint } from "@mariozechner/pi-coding-agent";
-import type { Theme } from "@mariozechner/pi-coding-agent";
+import { keyHint } from "@earendil-works/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 
 import type {
   ExaSearchResult,

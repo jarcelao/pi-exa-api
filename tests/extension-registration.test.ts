@@ -23,7 +23,7 @@ function createMockExtensionAPI() {
 
 function setup() {
   const api = createMockExtensionAPI();
-  exaSearchExtension(api as unknown as import("@mariozechner/pi-coding-agent").ExtensionAPI);
+  exaSearchExtension(api as unknown as import("@earendil-works/pi-coding-agent").ExtensionAPI);
   return api;
 }
 

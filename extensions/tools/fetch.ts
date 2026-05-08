@@ -2,8 +2,8 @@
  * Exa Fetch tool definition
  */
 
-import type { ExtensionContext, Theme } from "@mariozechner/pi-coding-agent";
-import { defineTool } from "@mariozechner/pi-coding-agent";
+import type { ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
+import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
 import Exa from "exa-js";
 
