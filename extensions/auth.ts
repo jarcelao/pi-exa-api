@@ -30,9 +30,12 @@ export async function resolveAuth(): Promise<AuthResult> {
 
   const envKey = process.env.EXA_API_KEY;
   if (envKey && envKey.length > 0) {
-    return { key: envKey, source: "env", configured: true, warnings };
+    return { key: envKey, source: "env", configured: true, warnings: [] };
   }
 
+  warnings.push(
+    `No Exa API key found. Set the EXA_API_KEY environment variable or create ${EXA_AUTH_FILE_PATH} with an "exaApiKey" field.`,
+  );
   return { key: undefined, source: "none", configured: false, warnings };
 }
 
@@ -52,7 +55,9 @@ async function tryReadFileKey(warnings: string[]): Promise<string | undefined> {
       "code" in err &&
       (err as NodeJS.ErrnoException).code === "ENOENT"
     ) {
-      // File absent is expected — no warning needed
+      warnings.push(
+        `API key file not found at ${EXA_AUTH_FILE_PATH}`,
+      );
       return undefined;
     }
     const message = err instanceof Error ? err.message : String(err);

@@ -28,10 +28,6 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
         "Exa API key not configured. Set the EXA_API_KEY environment variable or create an exa-auth.json file in ~/.pi/agent/.",
         "warning",
       );
-    } else {
-      const sourceLabel =
-        auth.source === "file" ? `loaded from file (exa-auth.json)` : `loaded from EXA_API_KEY`;
-      ctx.ui.notify(`Exa API key: ${sourceLabel} ✓`, "info");
     }
   });
 

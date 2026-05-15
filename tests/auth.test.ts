@@ -28,7 +28,7 @@ describe("resolveAuth", () => {
 
     expect(result.key).toBe("file-key");
     expect(result.source).toBe("file");
-    expect(result.warnings).toEqual([]);
+    expect(result.warnings).toHaveLength(0);
   });
 
   it("falls back to env var when file contains an invalid key", async () => {
@@ -40,7 +40,7 @@ describe("resolveAuth", () => {
 
     expect(result.key).toBe("env-key");
     expect(result.source).toBe("env");
-    expect(result.warnings).toEqual([]);
+    expect(result.warnings).toHaveLength(0);
   });
 
   it("falls back to env var when file is absent", async () => {
@@ -68,32 +68,38 @@ describe("resolveAuth", () => {
     expect(result.key).toBeUndefined();
     expect(result.source).toBe("none");
     expect(result.configured).toBe(false);
-    expect(result.warnings).toEqual([]);
+    expect(result.warnings).toHaveLength(2);
+    expect(result.warnings[0]).toContain("API key file not found");
+    expect(result.warnings[1]).toContain("No Exa API key found");
   });
 
-  it("warns on unexpected file errors but stays silent for missing files", async () => {
+  it("warns on unexpected file errors and missing file", async () => {
     const { resolveAuth } = await import("../extensions/auth.ts");
 
-    // Malformed JSON produces a warning
+    // Malformed JSON produces a file-read warning + no-key-found warning
     mockedFs.readFile.mockResolvedValue("not json");
     const withBadJson = await resolveAuth();
-    expect(withBadJson.warnings).toHaveLength(1);
+    expect(withBadJson.warnings).toHaveLength(2);
     expect(withBadJson.warnings[0]).toContain("Could not read");
+    expect(withBadJson.warnings[1]).toContain("No Exa API key found");
 
-    // Permission error produces a warning
+    // Permission error produces a file-read warning + no-key-found warning
     mockedFs.readFile.mockRejectedValue(
       Object.assign(new Error("EACCES: permission denied"), { code: "EACCES" }),
     );
     const withPermissionError = await resolveAuth();
-    expect(withPermissionError.warnings).toHaveLength(1);
+    expect(withPermissionError.warnings).toHaveLength(2);
     expect(withPermissionError.warnings[0]).toContain("EACCES");
+    expect(withPermissionError.warnings[1]).toContain("No Exa API key found");
 
-    // Missing file is silent
+    // Missing file produces a missing-file warning + no-key-found warning
     mockedFs.readFile.mockRejectedValue(
       Object.assign(new Error("ENOENT"), { code: "ENOENT" }),
     );
     const withMissingFile = await resolveAuth();
-    expect(withMissingFile.warnings).toEqual([]);
+    expect(withMissingFile.warnings).toHaveLength(2);
+    expect(withMissingFile.warnings[0]).toContain("API key file not found");
+    expect(withMissingFile.warnings[1]).toContain("No Exa API key found");
   });
 });
 
