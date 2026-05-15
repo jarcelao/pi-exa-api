@@ -11,7 +11,7 @@
 
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
-import { getApiKey } from "./api-key.ts";
+import { resolveAuth } from "./auth.ts";
 
 import { createExaSearchTool } from "./tools/search.ts";
 import { createExaFetchTool } from "./tools/fetch.ts";
@@ -19,9 +19,19 @@ import { createExaCodeContextTool } from "./tools/code-context.ts";
 
 export default function exaSearchExtension(pi: ExtensionAPI): void {
   pi.on("session_start", async (_event: unknown, ctx: ExtensionContext) => {
-    const hasKey = !!getApiKey();
-    if (!hasKey) {
-      ctx.ui.notify("Exa API key not configured. Set EXA_API_KEY to enable search.", "warning");
+    const auth = await resolveAuth();
+    for (const warning of auth.warnings) {
+      ctx.ui.notify(warning, "warning");
+    }
+    if (!auth.configured) {
+      ctx.ui.notify(
+        "Exa API key not configured. Set the EXA_API_KEY environment variable or create an exa-auth.json file in ~/.pi/agent/.",
+        "warning",
+      );
+    } else {
+      const sourceLabel =
+        auth.source === "file" ? `loaded from file (exa-auth.json)` : `loaded from EXA_API_KEY`;
+      ctx.ui.notify(`Exa API key: ${sourceLabel} ✓`, "info");
     }
   });
 
@@ -34,13 +44,26 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
   pi.registerCommand("exa-status", {
     description: "Check Exa API key configuration status",
     handler: async (_args: string, ctx: ExtensionContext) => {
-      const configured = !!getApiKey();
-      ctx.ui.notify(
-        configured
-          ? "Exa API key: configured via EXA_API_KEY"
-          : "Exa API key: not configured. Set EXA_API_KEY environment variable.",
-        configured ? "info" : "warning",
-      );
+      const auth = await resolveAuth();
+      for (const warning of auth.warnings) {
+        ctx.ui.notify(warning, "warning");
+      }
+      let message: string;
+      switch (auth.source) {
+        case "file":
+          message = "Exa API key: configured ✓ (source: file — exa-auth.json)";
+          break;
+        case "env":
+          message = "Exa API key: configured ✓ (source: env — EXA_API_KEY)";
+          break;
+        case "none":
+        default:
+          message =
+            "Exa API key: not configured ✗\n" +
+            "Set the EXA_API_KEY environment variable or create an exa-auth.json file in ~/.pi/agent/.";
+          break;
+      }
+      ctx.ui.notify(message, auth.configured && auth.warnings.length === 0 ? "info" : "warning");
     },
   });
 }

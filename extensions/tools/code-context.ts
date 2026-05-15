@@ -54,7 +54,7 @@ export function createExaCodeContextTool() {
       _onUpdate: unknown,
       _ctx: unknown,
     ) {
-      const apiKey = requireApiKey();
+      const apiKey = await requireApiKey();
 
       // Ensure tokensNum is the correct type: number or "dynamic"
       let tokensNum: string | number = params.tokensNum ?? "dynamic";

@@ -58,7 +58,7 @@ export function createExaSearchTool() {
       _onUpdate: unknown,
       _ctx: ExtensionContext,
     ) {
-      const apiKey = requireApiKey();
+      const apiKey = await requireApiKey();
       const numResults = Math.max(1, Math.min(100, params.numResults ?? 10));
       const exa = new Exa(apiKey);
 

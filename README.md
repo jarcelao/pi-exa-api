@@ -15,6 +15,20 @@ pi install npm:@jarcelao/pi-exa-api
 
 ## Configuration
 
+You can configure your Exa API key using either method below. File-based auth takes priority over the environment variable.
+
+### Option 1 — Auth file (recommended)
+
+Create `~/.pi/agent/exa-auth.json`:
+
+```json
+{
+  "exaApiKey": "your-api-key-here"
+}
+```
+
+### Option 2 — Environment variable
+
 Set your Exa API key as an environment variable before starting pi:
 
 ```bash
@@ -26,7 +40,7 @@ Or add to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.) for persistence.
 
 ### Check Configuration
 
-Run the `/exa-status` command in pi to verify your API key is configured:
+Run the `/exa-status` command in pi to verify your API key is configured and see which source it was loaded from:
 
 ```
 /exa-status

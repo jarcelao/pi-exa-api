@@ -7,6 +7,6 @@
  */
 export function createMissingApiKeyError(): Error {
   return new Error(
-    "Exa API key not configured. Set EXA_API_KEY environment variable before starting pi.",
+    "Exa API key not configured. Set the EXA_API_KEY environment variable or create an exa-auth.json file in ~/.pi/agent/.",
   );
 }

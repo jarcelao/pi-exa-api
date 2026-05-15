@@ -53,7 +53,7 @@ export function createExaFetchTool() {
       _onUpdate: unknown,
       _ctx: ExtensionContext,
     ) {
-      const apiKey = requireApiKey();
+      const apiKey = await requireApiKey();
       const exa = new Exa(apiKey);
 
       const contentsOptions: {

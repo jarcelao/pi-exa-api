@@ -14,7 +14,7 @@ import {
 import { Text } from "@earendil-works/pi-tui";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 
-import { getApiKey } from "../api-key.ts";
+import { resolveAuth } from "../auth.ts";
 import { createMissingApiKeyError } from "../errors.ts";
 import { formatToolOutputPreview } from "../formatters.ts";
 
@@ -25,12 +25,12 @@ export const EXA_CONTEXT_API_URL = "https://api.exa.ai/context";
  * Require an API key to be configured, throwing if missing.
  * @returns The API key
  */
-export function requireApiKey(): string {
-  const apiKey = getApiKey();
-  if (!apiKey) {
+export async function requireApiKey(): Promise<string> {
+  const auth = await resolveAuth();
+  if (!auth.key) {
     throw createMissingApiKeyError();
   }
-  return apiKey;
+  return auth.key;
 }
 
 /**
