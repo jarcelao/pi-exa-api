@@ -11,7 +11,7 @@ pi install npm:@jarcelao/pi-exa-api
 ```
 
 > [!NOTE]
-> This extension is tested up to `pi-coding-agent` v0.75.4
+> This extension is tested up to `pi-coding-agent` v0.78.0
 
 ## Configuration
 
