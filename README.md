@@ -85,6 +85,11 @@ Fetch the content from https://example.com/article
 
 ### Code Context
 
+> [!IMPORTANT]
+> On July 1, 2026, I aim to retire this tool from the extension.
+> From experience, most models opt to use the search and fetch tools instead, which still gives satisfactory results.
+> You can already try this out in the `feat/remove-context` branch. For any feedback, feel free to raise an issue.
+
 The agent can use `exa_code_context` to find code snippets and examples from open source libraries and repositories:
 
 ```
