@@ -5,12 +5,7 @@
 import { keyHint } from "@earendil-works/pi-coding-agent";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 
-import type {
-  ExaSearchResult,
-  ExaSearchResponse,
-  CodeContextResponse,
-  FetchContentType,
-} from "./types.ts";
+import type { ExaSearchResult, ExaSearchResponse, FetchContentType } from "./types.ts";
 
 /**
  * Format search results into a readable string.
@@ -96,16 +91,6 @@ export function formatFetchResult(result: ExaSearchResult, contentType: FetchCon
 }
 
 /**
- * Parse cost dollars from either a JSON string or object.
- */
-export function parseCostDollars(costDollars: string | { total: number }): { total: number } {
-  if (typeof costDollars === "string") {
-    return JSON.parse(costDollars);
-  }
-  return costDollars;
-}
-
-/**
  * Format a preview of tool output for TUI display.
  * Shows up to 10 lines when collapsed, full output when expanded.
  */
@@ -143,25 +128,4 @@ export function formatToolOutputPreview(
   }
 
   return text;
-}
-
-/**
- * Format code context response into a readable string.
- */
-export function formatCodeContextResult(response: CodeContextResponse): string {
-  const lines: string[] = [];
-
-  lines.push(`Query: ${response.query}`);
-  lines.push(`Results: ${response.resultsCount} sources`);
-  lines.push(`Output tokens: ${response.outputTokens}`);
-  lines.push("");
-  lines.push("--- Code Context ---");
-  lines.push("");
-  lines.push(response.response);
-  lines.push("");
-
-  const cost = parseCostDollars(response.costDollars);
-  lines.push(`Cost: $${cost.total.toFixed(6)}`);
-
-  return lines.join("\n");
 }

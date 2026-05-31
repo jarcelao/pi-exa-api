@@ -44,9 +44,7 @@ describe("resolveAuth", () => {
   });
 
   it("falls back to env var when file is absent", async () => {
-    mockedFs.readFile.mockRejectedValue(
-      Object.assign(new Error("ENOENT"), { code: "ENOENT" }),
-    );
+    mockedFs.readFile.mockRejectedValue(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
     process.env.EXA_API_KEY = "env-key";
 
     const { resolveAuth } = await import("../extensions/auth.ts");
@@ -58,9 +56,7 @@ describe("resolveAuth", () => {
   });
 
   it("returns unconfigured when no auth source is available", async () => {
-    mockedFs.readFile.mockRejectedValue(
-      Object.assign(new Error("ENOENT"), { code: "ENOENT" }),
-    );
+    mockedFs.readFile.mockRejectedValue(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
 
     const { resolveAuth } = await import("../extensions/auth.ts");
     const result = await resolveAuth();
@@ -93,9 +89,7 @@ describe("resolveAuth", () => {
     expect(withPermissionError.warnings[1]).toContain("No Exa API key found");
 
     // Missing file produces a missing-file warning + no-key-found warning
-    mockedFs.readFile.mockRejectedValue(
-      Object.assign(new Error("ENOENT"), { code: "ENOENT" }),
-    );
+    mockedFs.readFile.mockRejectedValue(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
     const withMissingFile = await resolveAuth();
     expect(withMissingFile.warnings).toHaveLength(2);
     expect(withMissingFile.warnings[0]).toContain("API key file not found");

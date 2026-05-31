@@ -35,24 +35,6 @@ export interface FetchDetails {
   cost?: { total: number };
 }
 
-export interface CodeContextDetails {
-  query: string;
-  resultsCount: number;
-  outputTokens: number;
-  cost?: { total: number };
-}
-
-// Code context API response type
-export interface CodeContextResponse {
-  requestId: string;
-  query: string;
-  response: string;
-  resultsCount: number;
-  costDollars: string | { total: number };
-  searchTime: number;
-  outputTokens: number;
-}
-
 // Exa search options type
 export interface SearchOptions {
   numResults: number;

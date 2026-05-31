@@ -50,14 +50,8 @@ async function tryReadFileKey(warnings: string[]): Promise<string | undefined> {
     }
     return undefined;
   } catch (err) {
-    if (
-      err instanceof Error &&
-      "code" in err &&
-      (err as NodeJS.ErrnoException).code === "ENOENT"
-    ) {
-      warnings.push(
-        `API key file not found at ${EXA_AUTH_FILE_PATH}`,
-      );
+    if (err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+      warnings.push(`API key file not found at ${EXA_AUTH_FILE_PATH}`);
       return undefined;
     }
     const message = err instanceof Error ? err.message : String(err);

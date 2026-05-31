@@ -18,9 +18,6 @@ import { resolveAuth } from "../auth.ts";
 import { createMissingApiKeyError } from "../errors.ts";
 import { formatToolOutputPreview } from "../formatters.ts";
 
-/** Exa Context API base URL */
-export const EXA_CONTEXT_API_URL = "https://api.exa.ai/context";
-
 /**
  * Require an API key to be configured, throwing if missing.
  * @returns The API key

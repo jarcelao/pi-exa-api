@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  formatSearchResults,
-  formatFetchResult,
-  formatCodeContextResult,
-  parseCostDollars,
-} from "../extensions/formatters.ts";
+import { formatSearchResults, formatFetchResult } from "../extensions/formatters.ts";
 
 describe("formatSearchResults", () => {
   it("should format basic result fields", () => {
@@ -157,60 +152,5 @@ describe("formatFetchResult", () => {
     expect(formatted).toContain("URL: https://example.com");
     // No text section should appear
     expect(formatted).not.toContain("Text:");
-  });
-});
-
-describe("parseCostDollars", () => {
-  it("should parse JSON string costDollars", () => {
-    const parsed = parseCostDollars('{"total":0.007,"search":{"neural":0.007}}');
-    expect(parsed).toEqual({ total: 0.007, search: { neural: 0.007 } });
-  });
-
-  it("should pass through object costDollars unchanged", () => {
-    const costObject = { total: 1.5 };
-    expect(parseCostDollars(costObject)).toBe(costObject);
-  });
-
-  it("should handle zero cost", () => {
-    expect(parseCostDollars('{"total":0}').total).toBe(0);
-  });
-});
-
-describe("formatCodeContextResult", () => {
-  const baseResponse = {
-    requestId: "req_123",
-    query: "React hooks state management",
-    response: "## Example\n\n```js\nconst [count, setCount] = useState(0);\n```",
-    resultsCount: 502,
-    costDollars: '{"total":0.007}',
-    searchTime: 1.234,
-    outputTokens: 4805,
-  };
-
-  it("should include all key fields", () => {
-    const formatted = formatCodeContextResult(baseResponse);
-    expect(formatted).toContain("Query: React hooks state management");
-    expect(formatted).toContain("Results: 502 sources");
-    expect(formatted).toContain("Output tokens: 4805");
-    expect(formatted).toContain("--- Code Context ---");
-    expect(formatted).toContain("## Example");
-  });
-
-  it("should format cost from JSON string", () => {
-    const formatted = formatCodeContextResult(baseResponse);
-    expect(formatted).toContain("Cost: $0.007000");
-  });
-
-  it("should format cost from object", () => {
-    const formatted = formatCodeContextResult({ ...baseResponse, costDollars: { total: 1.5 } });
-    expect(formatted).toContain("Cost: $1.500000");
-  });
-
-  it("should format cost with full decimal precision", () => {
-    const formatted = formatCodeContextResult({
-      ...baseResponse,
-      costDollars: '{"total":0.123456}',
-    });
-    expect(formatted).toContain("Cost: $0.123456");
   });
 });

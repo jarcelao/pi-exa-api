@@ -30,15 +30,14 @@ function setup() {
 const mockTheme = { fg: (_name: string, text: string) => text };
 
 describe("Extension Registration", () => {
-  it("should register all three tools with correct names and labels", () => {
+  it("should register all tools with correct names and labels", () => {
     const api = setup();
     const tools = api.getTools();
-    expect(tools).toHaveLength(3);
+    expect(tools).toHaveLength(2);
 
     const expected = [
       { name: "exa_search", label: "Exa Search" },
       { name: "exa_fetch", label: "Exa Fetch" },
-      { name: "exa_code_context", label: "Exa Code Context" },
     ];
 
     for (const { name, label } of expected) {
@@ -104,58 +103,5 @@ describe("exa_fetch renderResult", () => {
       { lastComponent: undefined },
     );
     expect(rendered.text).toBe("");
-  });
-});
-
-describe("exa_code_context renderResult", () => {
-  it("should display stats and cost when details present", () => {
-    const api = setup();
-    const tool = api.findTool("exa_code_context") as { renderResult: Function };
-    const rendered = tool.renderResult(
-      {
-        content: [],
-        details: {
-          query: "React hooks",
-          resultsCount: 502,
-          outputTokens: 4805,
-          cost: { total: 1.0 },
-        },
-      },
-      { expanded: false, isPartial: false },
-      mockTheme,
-      { lastComponent: undefined },
-    );
-    expect(rendered.text).toContain("502 sources");
-    expect(rendered.text).toContain("4805 tokens");
-    expect(rendered.text).toContain("$1.000000");
-  });
-
-  it("should display stats without cost when cost missing", () => {
-    const api = setup();
-    const tool = api.findTool("exa_code_context") as { renderResult: Function };
-    const rendered = tool.renderResult(
-      {
-        content: [],
-        details: { query: "Express middleware", resultsCount: 100, outputTokens: 2000 },
-      },
-      { expanded: false, isPartial: false },
-      mockTheme,
-      { lastComponent: undefined },
-    );
-    expect(rendered.text).toContain("100 sources");
-    expect(rendered.text).toContain("2000 tokens");
-    expect(rendered.text).not.toContain("$");
-  });
-
-  it("should fall back to content text when no details", () => {
-    const api = setup();
-    const tool = api.findTool("exa_code_context") as { renderResult: Function };
-    const rendered = tool.renderResult(
-      { content: [{ type: "text", text: "Some code context output here" }] },
-      { expanded: false, isPartial: false },
-      mockTheme,
-      { lastComponent: undefined },
-    );
-    expect(rendered.text).toContain("Some code context");
   });
 });

@@ -1,10 +1,9 @@
 /**
  * exa-search Extension
  *
- * Registers three tools for web search, content fetching, and code context using the Exa API:
+ * Registers two tools for web search and content fetching using the Exa API:
  * - exa_search: Natural language web search
  * - exa_fetch: Fetch and extract content from URLs
- * - exa_code_context: Search for code snippets and examples from open source repos
  *
  * Also registers the /exa-status command to check API key configuration.
  */
@@ -15,7 +14,6 @@ import { resolveAuth } from "./auth.ts";
 
 import { createExaSearchTool } from "./tools/search.ts";
 import { createExaFetchTool } from "./tools/fetch.ts";
-import { createExaCodeContextTool } from "./tools/code-context.ts";
 
 export default function exaSearchExtension(pi: ExtensionAPI): void {
   pi.on("session_start", async (_event: unknown, ctx: ExtensionContext) => {
@@ -34,7 +32,6 @@ export default function exaSearchExtension(pi: ExtensionAPI): void {
   // Register tools
   pi.registerTool(createExaSearchTool());
   pi.registerTool(createExaFetchTool());
-  pi.registerTool(createExaCodeContextTool());
 
   // Register /exa-status command
   pi.registerCommand("exa-status", {
