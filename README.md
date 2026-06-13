@@ -1,5 +1,8 @@
 # pi-exa-api
 
+> [!IMPORTANT]
+> Development of this extension has been moved to [jarcelao/pi-extensions](https://github.com/jarcelao/pi-extensions)
+
 Web search, content fetching, and code context for [pi](https://pi.dev) via the [Exa API](https://exa.ai/).
 
 ## Installation
